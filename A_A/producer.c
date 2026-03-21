@@ -9,12 +9,8 @@
 
 int main()
 {
-	printf("Inside the program\n");
 	const int SIZE = 4096;
 	const char *name = "OS";
-	const char *message0= "Studying ";
-	const char *message1= "Operating Systems ";
-	const char *message2= "Is Fun!";
 
 	int shm_fd;
 	void *ptr;
