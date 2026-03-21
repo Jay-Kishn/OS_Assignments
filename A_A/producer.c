@@ -32,61 +32,57 @@ int main()
 		return -1;
 	}
 	char *base = ptr;
-	/**
-	 * Now write to the shared memory region.
- 	 *
-	 * Note we must increment the value of ptr after each write.
-       	*/
+	/*
+	Now write to the shared memory region.
+	We must increment the value of ptr after each write.
+    */
 	const char *free_message = "freeeee";
 	printf("Writing free space");
         for(int i = 0;i<512;i+=8){
 		sprintf(ptr + i,"%s",free_message);
-        }
+    }
+
 	const char *os_message = "OSisFun";
 	FILE *fp;
-
-	
 	umask(0);
 	mknod("myfifo", S_IFIFO|0666, 0);
-	printf("File created\n");
+	printf("Named pipe created\n");
+	
 	if ((fp = fopen("myfifo", "w")) == NULL){
 		perror("failed to open");
 		exit(1);
 	}
-	printf("File opened\n");
+	printf("Named pipe opened\n");
+
 	int offset = 0;
 	int cnt  = 0;
-	int cnt_limit = 12;
-        while(cnt < cnt_limit){
-			offset %= cnt_limit;
-			printf("offset is now %d \n",offset);
-			printf("At offset 8: %.8s\n", base + 8);
-			const char *ptr = strstr((base+offset), free_message);
-			while(ptr == NULL){
-                           offset += 8;
-			   offset %= cnt_limit;
-			  // if(offset<100){
-			  // printf("offset inside the loop %s \n",base+offset);
-			   //}
-                           
-                           ptr = strstr((base+offset),free_message);
-			}
-			printf("ptr is:%s and base is:%s\n",ptr,base);
-		        int pos = ptr - base;
-		        printf("Ptr after comparing is %d \n",pos);
-			printf("Found a free space\n");
-			printf("Writing to the shared memory at i=%d\n",cnt);
-			sprintf(base + pos,"%s",os_message);
-			printf("Now writing the offset as %d\n",pos);
-        		// We try to write to the pipe the offset of the written material by producer
-			fprintf(fp,"%d\n", pos);
-			fflush(fp);
+	int cnt_limit = 12; //iterations after which producer will stop producing
 
-			printf("Written the offset: %d\n",pos);
-			cnt++;
-		
-        }
-        printf("Closing the pipe now\n");
+	while(cnt < cnt_limit){
+		offset %= cnt_limit;
+		const char *ptr = strstr((base+offset), free_message);
+
+		while(ptr == NULL){
+			offset += 8;
+			offset %= cnt_limit;
+			ptr = strstr((base+offset),free_message);
+		}
+		int pos = ptr - base;
+		printf("Ptr after comparing is %d \n",pos);
+		printf("Found a free space\n");
+		printf("Writing to the shared memory at i=%d\n",cnt);
+		sprintf(base + pos,"%s",os_message);
+
+		printf("Now writing the offset as %d\n",pos);
+		// We try to write to the pipe the offset of the written material by producer
+		fprintf(fp,"%d\n", pos);
+		fflush(fp);
+
+		printf("Written the offset: %d\n",pos);
+		cnt++;
+	}
+	
+	printf("Closing the pipe now\n");
 	fclose(fp);
 
 	return 0;
